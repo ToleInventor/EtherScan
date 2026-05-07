@@ -3,356 +3,341 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Balances</title>
+    <title>Ethereum Mainnet Wallet Balances</title>
     <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
     <style>
-        :root {
-            --primary: #667eea;
-            --primary-dark: #5a67d8;
-            --success: #27ae60;
-            --success-dark: #219a52;
-            --warning: #f39c12;
-            --bg: #f8f9fa;
-            --card: white;
-            --text: #2c3e50;
-            --text-muted: #7f8c8d;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
-            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
-            --border: #e9ecef;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%); 
-            min-height: 100vh; 
-            padding: 0; 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
         }
 
-        .container { 
-            background: var(--card); 
-            border-radius: 0; 
-            box-shadow: none; 
-            overflow: hidden; 
-            width: 100%; 
-            height: 100vh; 
-            max-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
 
-        .header { 
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
-            color: white; 
-            padding: 20px; 
-            text-align: center; 
-            position: relative; 
-            overflow: hidden; 
-            flex-shrink: 0; 
-        }
-        .header::before {
-            content: '';
-            position: absolute;
-            top: -50%; right: -50%;
-            width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: shimmer 3s infinite;
-        }
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
-        }
-        .header h1 { 
-            font-size: 1.3rem; 
-            font-weight: 600; 
-            margin: 0; 
-            position: relative; 
-            z-index: 1; 
-        }
-        .header p { 
-            opacity: 0.9; 
-            margin-top: 2px; 
-            font-size: 0.8rem; 
-            position: relative; 
-            z-index: 1; 
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
         }
 
-        .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-        
-        .status { 
-            padding: 16px 20px; 
-            text-align: center; 
-            font-weight: 500; 
-            flex-shrink: 0; 
-            background: var(--bg); 
-            border-bottom: 1px solid var(--border); 
-        }
-        .status.loading { color: var(--primary); }
-        .status.success { color: var(--success); }
-        .status.error { color: #e74c3c; }
-
-        .progress { 
-            display: flex; align-items: center; gap: 10px; 
-            font-size: 0.85rem; 
-        }
-        .progress-icon { 
-            width: 18px; height: 18px; 
-            display: flex; align-items: center; justify-content: center; 
-            flex-shrink: 0; 
-        }
-        .progress-bar { 
-            flex: 1; height: 3px; background: var(--border); 
-            border-radius: 2px; overflow: hidden; 
-        }
-        .progress-fill { 
-            height: 100%; 
-            background: linear-gradient(90deg, var(--primary), var(--primary-dark)); 
-            border-radius: 2px; 
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
-        }
-        .progress-fill::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            animation: progressShine 1.5s infinite;
-        }
-        @keyframes progressShine {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
         }
 
-        .wallets-list { 
-            flex: 1; 
-            overflow-y: auto; 
-            padding: 16px 20px; 
-            scrollbar-width: thin; 
-            scrollbar-color: var(--primary) var(--bg); 
-        }
-        .wallets-list::-webkit-scrollbar { width: 4px; }
-        .wallets-list::-webkit-scrollbar-track { background: var(--bg); }
-        .wallets-list::-webkit-scrollbar-thumb { 
-            background: var(--primary); 
-            border-radius: 2px; 
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
         }
 
-        .wallet-item { 
-            background: var(--bg); 
-            border-radius: 14px; 
-            padding: 16px 20px; 
-            margin-bottom: 10px; 
-            border: 1px solid var(--border); 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            display: grid; 
-            grid-template-columns: auto 1fr auto auto; 
-            gap: 12px 16px; 
-            align-items: center; 
-            position: relative; 
-            overflow: hidden; 
-        }
-        .wallet-item::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 3px; height: 100%;
-            background: var(--primary);
-            transform: scaleY(0);
-            transition: transform 0.3s;
-        }
-        .wallet-item:hover { 
-            transform: translateY(-2px); 
-            box-shadow: var(--shadow-hover); 
-            border-color: var(--primary); 
-        }
-        .wallet-item:hover::before { transform: scaleY(1); }
-        
-        .wallet-no { 
-            font-size: 0.8rem; 
-            color: var(--text-muted); 
-            font-weight: 600; 
-            min-width: 24px; 
-            text-align: center; 
-        }
-        
-        .address-container { display: flex; align-items: center; gap: 8px; }
-        .address { 
-            font-family: 'SF Mono', Monaco, monospace; 
-            font-size: 0.75rem; 
-            color: var(--text); 
-            word-break: break-all; 
-            max-width: 180px; 
-            letter-spacing: -0.01em; 
-        }
-        .copy-btn { 
-            background: none; 
-            border: 1.5px solid transparent; 
-            color: var(--text-muted); 
-            cursor: pointer; 
-            padding: 6px; 
-            border-radius: 8px; 
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
-            opacity: 0.7; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            flex-shrink: 0; 
-        }
-        .copy-btn:hover { 
-            background: var(--primary); 
-            color: white; 
-            opacity: 1; 
-            border-color: rgba(255,255,255,0.2);
-            transform: scale(1.05); 
-        }
-        .copy-success { 
-            background: var(--success) !important; 
-            color: white !important; 
-            border-color: rgba(255,255,255,0.3) !important;
-            animation: pulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
+        .network-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            margin-top: 12px;
         }
 
-        .balance-eth { 
-            font-size: 1.1rem; 
-            font-weight: 700; 
-            color: var(--success); 
-            text-align: right; 
-            flex-shrink: 0; 
-        }
-        .balance-usd { 
-            font-size: 0.85rem; 
-            color: var(--success-dark); 
-            text-align: right; 
-            font-weight: 500; 
-            flex-shrink: 0; 
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
-        .total { 
-            background: linear-gradient(135deg, var(--success), var(--success-dark)); 
-            color: white; 
-            padding: 20px; 
-            text-align: center; 
-            font-size: 1.4rem; 
-            font-weight: 700; 
-            flex-shrink: 0; 
-            box-shadow: 0 -6px 24px rgba(39,174,96,0.3); 
-            position: relative; 
-            overflow: hidden; 
-        }
-        .total::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-            animation: totalShine 2s infinite;
-        }
-        @keyframes totalShine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
         }
 
-        .controls { 
-            padding: 16px 20px; 
-            text-align: center; 
-            border-top: 1px solid var(--border); 
-            flex-shrink: 0; 
-            background: var(--bg); 
-        }
-        .refresh-btn { 
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
-            color: white; 
-            border: none; 
-            padding: 12px 28px; 
-            border-radius: 50px; 
-            cursor: pointer; 
-            font-size: 0.95rem; 
-            font-weight: 500; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            min-width: 130px; 
-            position: relative; 
-            overflow: hidden; 
-        }
-        .refresh-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        .refresh-btn:hover:not(:disabled)::before { left: 100%; }
-        .refresh-btn:hover:not(:disabled) { 
-            transform: translateY(-1px); 
-            box-shadow: var(--shadow); 
-        }
-        .refresh-btn:disabled { 
-            background: var(--border); 
-            cursor: not-allowed; 
-            transform: none; 
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
         }
 
-        @media (min-width: 480px) {
-            .container { 
-                border-radius: 24px; 
-                box-shadow: var(--shadow); 
-                max-width: 600px; 
-                margin: 20px auto; 
-                height: auto; 
-                min-height: 80vh; 
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .price-info {
+            background: #e9ecef;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .wallets-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .wallet-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .wallet-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .wallet-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 2;
+            min-width: 200px;
+        }
+
+        .wallet-number {
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .address-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .address {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #495057;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6c757d;
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: #e9ecef;
+            color: #667eea;
+        }
+
+        .balance-right {
+            text-align: right;
+            min-width: 150px;
+        }
+
+        .eth-balance {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .usd-balance {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .total-label {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .total-amount {
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .refresh-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.02);
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
             }
-            .wallet-item { 
-                grid-template-columns: auto 1fr auto auto; 
-                gap: 12px 20px; 
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .error-item {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Wallet Balances</h1>
-            <p>Live ETH & USD values across 15 addresses</p>
+            <h1>
+                <ion-icon name="wallet-outline"></ion-icon>
+                Wallet Balances
+            </h1>
+            <p>Ethereum Mainnet - 15 Wallet Addresses</p>
+            <div class="network-badge">
+                <ion-icon name="checkmark-circle"></ion-icon> Mainnet
+            </div>
         </div>
 
-        <div class="content">
-            <div id="status" class="status">
-                <div class="progress">
-                    <div class="progress-icon">
-                        <ion-icon name="hourglass-outline"></ion-icon>
-                    </div>
-                    <div id="progressText">Ready</div>
-                    <div class="progress-bar">
-                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
-                    </div>
+        <div class="status-bar">
+            <div class="progress-info">
+                <ion-icon name="sync-outline" id="statusIcon"></ion-icon>
+                <span id="statusText">Ready to load</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
                 </div>
             </div>
-
-            <div id="wallets" class="wallets-list"></div>
-            
-            <div id="total" class="total" style="display: none;">
-                <ion-icon name="trending-up-outline" style="font-size: 1.2em; vertical-align: middle; margin-right: 8px;"></ion-icon>
-                Total: 0 ETH | $0.00
+            <div class="price-info" id="priceInfo">
+                <ion-icon name="cash-outline"></ion-icon>
+                <span id="ethPrice">ETH: Loading...</span>
             </div>
         </div>
 
-        <div class="controls">
+        <div id="walletsContainer" class="wallets-list">
+            <div style="text-align: center; padding: 40px; color: #6c757d;">
+                <ion-icon name="cloud-download-outline" style="font-size: 2rem;"></ion-icon>
+                <p>Click refresh to load wallet balances</p>
+            </div>
+        </div>
+
+        <div class="total-section" id="totalSection" style="display: none;">
+            <div class="total-label">
+                <ion-icon name="trending-up-outline"></ion-icon>
+                Total Value (All Wallets)
+            </div>
+            <div>
+                <span class="total-amount" id="totalETH">0 ETH</span>
+                <span style="margin: 0 10px">|</span>
+                <span class="total-amount" id="totalUSD">$0.00</span>
+            </div>
             <button id="refreshBtn" class="refresh-btn" onclick="loadBalances()">
-                <ion-icon name="refresh-outline" style="font-size: 1.1em; vertical-align: middle; margin-right: 8px;"></ion-icon>
-                Refresh Data
+                <ion-icon name="refresh-outline"></ion-icon>
+                Refresh
             </button>
         </div>
     </div>
 
     <script>
-        const ADDRESSES = [
-            '0x2Ef1189f58753496058D604Fa52886dCe4c57fb8',
+        // 15 Wallet addresses (Mainnet)
+        const WALLET_ADDRESSES = [
+            '0x132695b798f6633a230adc07eaa7809f512e42df',
             '0x59209468bf21b81e1ad1b8f6bb0911bafc650bf1',
             '0x91af34de8602dcb5d5e6f9474a18484539dc80fa',
             '0x5d6b91ab209e2acafb4b86e13e964ee17702730f',
@@ -367,142 +352,193 @@
             '0x5075774074de00601aaa29aa7c0a2695185f7107',
             '0x2afabcd428f11c1393e1bfbbb572ebffcd5a74ad',
             '0x6b8fc091c5f4cb485318d7536127f9ad069bbaec'
+            '0x2Ef1189f58753496058D604Fa52886dCe4c57fb8'
         ];
 
-        const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
-        let currentETHPrice = 3500; // Live price (update via API if needed)
-        let currentResults = [];
+        // More reliable CORS-friendly public RPC endpoints
+        const RPC_ENDPOINTS = [
+            'https://eth.llamarpc.com',
+            'https://rpc.mevblocker.io',
+            'https://eth-mainnet.gateway.tenderly.co',
+            'https://ethereum.blockpi.network/v1/rpc/public',
+            'https://1rpc.io/eth'
+        ];
 
-        async function getBalance(address) {
+        let currentETHPrice = 0;
+
+        // Get ETH price from CoinGecko (CORS-friendly)
+        async function getETHPrice() {
             try {
-                const response = await fetch(RPC_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        jsonrpc: '2.0',
-                        method: 'eth_getBalance',
-                        params: [address.toLowerCase(), 'latest'],
-                        id: 1
-                    })
-                });
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
                 const data = await response.json();
-                return data.result ? parseInt(data.result, 16) / 1e18 : 0;
-            } catch (e) {
-                return 0;
+                currentETHPrice = data.ethereum.usd;
+                document.getElementById('ethPrice').innerHTML = `ETH: $${currentETHPrice.toFixed(2)}`;
+                return currentETHPrice;
+            } catch (error) {
+                console.warn('Price fetch failed, using fallback:', error);
+                currentETHPrice = 3200;
+                document.getElementById('ethPrice').innerHTML = `ETH: ~$${currentETHPrice}`;
+                return currentETHPrice;
             }
         }
 
-        function ethToUSD(eth) {
-            return (eth * currentETHPrice).toLocaleString('en-US', { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-            });
-        }
-
-        function updateProgress(index, statusText = '') {
-            const progress = ((index / ADDRESSES.length) * 100);
-            document.getElementById('progressFill').style.width = `${progress}%`;
-            document.getElementById('progressText').textContent = statusText || `Wallet ${index}/${ADDRESSES.length}`;
-        }
-
-        function updateStatusIcon(iconName) {
-            document.querySelector('.progress-icon ion-icon').setAttribute('name', iconName);
-        }
-
-        async function loadBalances() {
-            const status = document.getElementById('status');
-            const walletsDiv = document.getElementById('wallets');
-            const totalDiv = document.getElementById('total');
-            const btn = document.getElementById('refreshBtn');
-
-            walletsDiv.innerHTML = '';
-            totalDiv.style.display = 'none';
-            btn.disabled = true;
-            updateStatusIcon('hourglass-outline');
-            updateProgress(0, 'Starting...');
-
-            let totalEth = 0;
-            let totalUSD = 0;
-            currentResults = [];
-
-            try {
-                for (let i = 0; i < ADDRESSES.length; i++) {
-                    const addr = ADDRESSES[i];
-                    updateProgress(i + 1);
+        // Get balance from mainnet with retry and multiple endpoints
+        async function getBalance(address) {
+            for (let i = 0; i < RPC_ENDPOINTS.length; i++) {
+                const endpoint = RPC_ENDPOINTS[i];
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            method: 'eth_getBalance',
+                            params: [address.toLowerCase(), 'latest'],
+                            id: 1
+                        }),
+                        signal: AbortSignal.timeout(10000) // 10 second timeout
+                    });
                     
-                    const eth = await getBalance(addr);
-                    const usd = eth * currentETHPrice;
-                    totalEth += eth;
-                    totalUSD += usd;
-                    currentResults.push({ index: i + 1, address: addr, balance: eth, usd });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    
+                    const data = await response.json();
+                    if (data && data.result && data.result !== '0x0') {
+                        const balanceWei = parseInt(data.result, 16);
+                        return balanceWei / 1e18;
+                    } else if (data && data.result === '0x0') {
+                        return 0;
+                    }
+                    throw new Error('Invalid response');
+                } catch (error) {
+                    console.warn(`RPC ${endpoint} failed for ${address.slice(0,8)}...:`, error.message);
+                    if (i === RPC_ENDPOINTS.length - 1) {
+                        console.error(`All RPCs failed for ${address}`);
+                        return 0;
+                    }
+                    // Wait before trying next endpoint
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            return 0;
+        }
 
-                    // 4-column layout: # | Address+Copy | ETH | USD
-                    const div = document.createElement('div');
-                    div.className = 'wallet-item';
-                    div.style.opacity = '0';
-                    div.style.transform = 'translateY(20px)';
-                    div.innerHTML = `
-                        <div class="wallet-no">#${i + 1}</div>
-                        <div class="address-container">
-                            <div class="address">${addr}</div>
-                            <button class="copy-btn" onclick="copyAddress('${addr}', this)" title="Copy">
+        // Format address for display
+        function formatAddress(address) {
+            return `${address.slice(0, 6)}...${address.slice(-4)}`;
+        }
+
+        // Copy address to clipboard
+        window.copyAddress = async function(address, btn) {
+            try {
+                await navigator.clipboard.writeText(address);
+                const icon = btn.querySelector('ion-icon');
+                const originalName = icon.getAttribute('name');
+                icon.setAttribute('name', 'checkmark-circle');
+                btn.style.color = '#28a745';
+                setTimeout(() => {
+                    icon.setAttribute('name', originalName);
+                    btn.style.color = '';
+                }, 1500);
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+        };
+
+        // Update progress
+        function updateProgress(current, total, message) {
+            const percent = (current / total) * 100;
+            document.getElementById('progressFill').style.width = `${percent}%`;
+            document.getElementById('statusText').innerHTML = message || `Loading ${current}/${total} wallets`;
+            
+            const icon = document.getElementById('statusIcon');
+            if (current < total) {
+                icon.setAttribute('name', 'sync-outline');
+                icon.classList.add('spinning');
+            } else {
+                icon.classList.remove('spinning');
+                icon.setAttribute('name', 'checkmark-circle');
+            }
+        }
+
+        // Main function to load all balances
+        window.loadBalances = async function() {
+            const walletsContainer = document.getElementById('walletsContainer');
+            const totalSection = document.getElementById('totalSection');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // Disable button and show loading
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<ion-icon name="hourglass-outline"></ion-icon> Loading...';
+            
+            // Clear previous results
+            walletsContainer.innerHTML = '';
+            totalSection.style.display = 'none';
+            
+            // Get current ETH price
+            updateProgress(0, WALLET_ADDRESSES.length, 'Fetching ETH price...');
+            await getETHPrice();
+            
+            let totalETH = 0;
+            let totalUSD = 0;
+            let loadedCount = 0;
+            
+            // Load each wallet balance
+            for (let i = 0; i < WALLET_ADDRESSES.length; i++) {
+                const address = WALLET_ADDRESSES[i];
+                updateProgress(i + 1, WALLET_ADDRESSES.length, `Loading wallet ${i + 1}/${WALLET_ADDRESSES.length}`);
+                
+                const eth = await getBalance(address);
+                const usd = eth * currentETHPrice;
+                
+                totalETH += eth;
+                totalUSD += usd;
+                loadedCount++;
+                
+                // Create wallet item with animation
+                const walletItem = document.createElement('div');
+                walletItem.className = 'wallet-item';
+                walletItem.style.animation = 'fadeIn 0.3s ease';
+                walletItem.innerHTML = `
+                    <div class="wallet-left">
+                        <div class="wallet-number">${i + 1}</div>
+                        <div class="address-wrapper">
+                            <div class="address" title="${address}">${formatAddress(address)}</div>
+                            <button class="copy-btn" onclick="copyAddress('${address}', this)" title="Copy full address">
                                 <ion-icon name="copy-outline"></ion-icon>
                             </button>
                         </div>
-                        <div>
-                            <div class="balance-eth">${eth.toFixed(6)} ETH</div>
-                            <div class="balance-usd">$${ethToUSD(eth)}</div>
-                        </div>
-                    `;
-                    walletsDiv.appendChild(div);
-
-                    requestAnimationFrame(() => {
-                        div.style.opacity = '1';
-                        div.style.transform = 'translateY(0)';
-                        div.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                    });
-
-                    await new Promise(r => setTimeout(r, 120));
-                }
-
-                totalDiv.innerHTML = `
-                    <ion-icon name="trending-up-outline" style="font-size: 1.2em; vertical-align: middle; margin-right: 8px;"></ion-icon>
-                    Total: ${totalEth.toFixed(4)} ETH | $${ethToUSD(totalEth)}
+                    </div>
+                    <div class="balance-right">
+                        <div class="eth-balance">${eth.toFixed(6)} ETH</div>
+                        <div class="usd-balance">$${usd.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
                 `;
-                totalDiv.style.display = 'block';
-                updateStatusIcon('checkmark-circle-outline');
-                updateProgress(ADDRESSES.length, 'All wallets loaded');
-            } catch (error) {
-                updateStatusIcon('close-circle-outline');
-                updateProgress(0, `Error: ${error.message}`);
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<ion-icon name="refresh-outline" style="font-size: 1.1em; vertical-align: middle; margin-right: 8px;"></ion-icon>Refresh Data';
-            }
-        }
-
-        function copyAddress(address, button) {
-            navigator.clipboard.writeText(address).then(() => {
-                const icon = button.querySelector('ion-icon');
-                const originalName = icon.getAttribute('name');
-                icon.setAttribute('name', 'checkmark-circle-outline');
-                button.classList.add('copy-success');
                 
-                setTimeout(() => {
-                    icon.setAttribute('name', originalName);
-                    button.classList.remove('copy-success');
-                }, 2000);
-            }).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = address;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', loadBalances);
+                walletsContainer.appendChild(walletItem);
+                
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+            
+            // Show total section
+            totalSection.style.display = 'flex';
+            document.getElementById('totalETH').innerHTML = `${totalETH.toFixed(6)} ETH`;
+            document.getElementById('totalUSD').innerHTML = `$${totalUSD.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Update final status
+            updateProgress(WALLET_ADDRESSES.length, WALLET_ADDRESSES.length, `✓ Successfully loaded ${loadedCount} wallets!`);
+            
+            // Re-enable refresh button
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<ion-icon name="refresh-outline"></ion-icon> Refresh';
+        };
+        
+        // Auto-load on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadBalances();
+        });
     </script>
 </body>
 </html>
