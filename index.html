@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Balances</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh; 
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+            overflow: hidden; 
+        }
+        h1 { 
+            text-align: center; 
+            padding: 30px 20px; 
+            margin: 0; 
+            background: #1a1a2e; 
+            color: white; 
+            font-size: 1.8em; 
+        }
+        .status { 
+            text-align: center; 
+            padding: 20px; 
+            font-weight: bold; 
+        }
+        .loading { color: #667eea; }
+        .error { color: #e74c3c; }
+        .success { color: #27ae60; }
+        .wallet-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 20px; 
+            padding: 30px; 
+        }
+        .wallet { 
+            background: #f8f9fa; 
+            border-radius: 15px; 
+            padding: 25px; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+            border-left: 5px solid #667eea; 
+        }
+        .wallet:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        }
+        .address { 
+            font-family: monospace; 
+            font-size: 0.9em; 
+            color: #2c3e50; 
+            word-break: break-all; 
+            margin-bottom: 15px; 
+        }
+        .balance { 
+            font-size: 1.5em; 
+            font-weight: bold; 
+            color: #27ae60; 
+            margin-bottom: 5px; 
+        }
+        .usd { 
+            font-size: 1.1em; 
+            color: #7f8c8d; 
+        }
+        .total { 
+            background: linear-gradient(135deg, #27ae60, #2ecc71); 
+            color: white; 
+            text-align: center; 
+            padding: 30px; 
+            font-size: 2em; 
+            font-weight: bold; 
+            margin: 0 30px 30px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(39,174,96,0.3); 
+        }
+        .refresh { 
+            text-align: center; 
+            padding: 20px; 
+        }
+        button { 
+            background: #667eea; 
+            color: white; 
+            border: none; 
+            padding: 12px 30px; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-size: 1em; 
+            transition: background 0.2s; 
+        }
+        button:hover { background: #5a67d8; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        @media (max-width: 600px) { 
+            .wallet-grid { grid-template-columns: 1fr; padding: 20px; } 
+            h1 { font-size: 1.5em; } 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wallet Balances (ETH) - Live</h1>
+        <div id="status" class="status">Loading balances...</div>
+        <div id="wallets" class="wallet-grid" style="display:none;"></div>
+        <div id="total" class="total" style="display:none;">Total Net Worth: 0 ETH</div>
+        <div class="refresh">
+            <button id="refreshBtn" onclick="loadBalances()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <script>
+        const ADDRESSES = [
+            '0x132695b798f6633a230adc07eaa7809f512e42df',
+            '0x59209468bf21b81e1ad1b8f6bb0911bafc650bf1',
+            '0x91af34de8602dcb5d5e6f9474a18484539dc80fa',
+            '0x5d6b91ab209e2acafb4b86e13e964ee17702730f',
+            '0x343965d15d907a3700a2e119e91f0f277ff657a1',
+            '0x2623bfa80b75f7c107bfa068067f090c48996978',
+            '0x443dbd36604b472a72058c0e52619585604fdeb4',
+            '0xc04ce509da0c3ca27cce8003a8125ee000979522',
+            '0xe584e7f484d8560af10fad63b24af6cb036fa6ee',
+            '0xbf95ae58d608b8b33a3ad093b5c56886b1a0ec85',
+            '0xbcaf93b63a77867c8e0ef26d8bde55cd7fbac410',
+            '0xcb09907b25d4667ca0b58153645d163b24434fa5',
+            '0x5075774074de00601aaa29aa7c0a2695185f7107',
+            '0x2afabcd428f11c1393e1bfbbb572ebffcd5a74ad',
+            '0x6b8fc091c5f4cb485318d7536127f9ad069bbaec'
+        ];
+
+        const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';  // Public, no key needed
+
+        async function getBalance(address) {
+            try {
+                const response = await fetch(RPC_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'eth_getBalance',
+                        params: [address.toLowerCase(), 'latest'],
+                        id: 1
+                    })
+                });
+                const data = await response.json();
+                if (data.result) {
+                    return parseInt(data.result, 16) / 1e18;
+                }
+                return 0;
+            } catch (e) {
+                console.error(`Error for ${address}:`, e);
+                return 0;
+            }
+        }
+
+        async function loadBalances() {
+            const status = document.getElementById('status');
+            const walletsDiv = document.getElementById('wallets');
+            const totalDiv = document.getElementById('total');
+            const btn = document.getElementById('refreshBtn');
+            
+            status.textContent = 'Fetching balances...';
+            status.className = 'status loading';
+            walletsDiv.style.display = 'none';
+            totalDiv.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+
+            try {
+                let totalEth = 0;
+                walletsDiv.innerHTML = '';
+
+                // Sequential fetch to avoid rate limits
+                for (const [index, addr] of ADDRESSES.entries()) {
+                    status.textContent = `Loading ${index + 1}/${ADDRESSES.length}...`;
+                    const eth = await getBalance(addr);
+                    totalEth += eth;
+
+                    const div = document.createElement('div');
+                    div.className = 'wallet';
+                    div.innerHTML = `
+                        <div class="address">${addr}</div>
+                        <div class="balance">${eth.toFixed(6)} ETH</div>
+                    `;
+                    walletsDiv.appendChild(div);
+                }
+
+                walletsDiv.style.display = 'grid';
+                totalDiv.textContent = `Total Net Worth: ${totalEth.toFixed(4)} ETH`;
+                totalDiv.style.display = 'block';
+                status.textContent = '✅ Updated!';
+                status.className = 'status success';
+            } catch (error) {
+                status.textContent = `Error: ${error.message}`;
+                status.className = 'status error';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🔄 Refresh';
+            }
+        }
+
+        // Auto-load on page open
+        loadBalances();
+    </script>
+</body>
+</html>
