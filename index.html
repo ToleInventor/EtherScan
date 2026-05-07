@@ -4,113 +4,350 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wallet Balances</title>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/ionicons@7.4.0/dist/ionicons/ionicons.js"></script>
     <style>
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --success: #27ae60;
+            --success-dark: #219a52;
+            --bg: #f8f9fa;
+            --card: white;
+            --text: #2c3e50;
+            --text-muted: #7f8c8d;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-hover: 0 8px 30px rgba(0,0,0,0.12);
+            --border: #e9ecef;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            margin: 0; 
-            padding: 20px; 
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%); 
             min-height: 100vh; 
+            padding: 15px; 
         }
+
         .container { 
-            max-width: 800px; 
+            background: var(--card); 
+            border-radius: 24px; 
+            box-shadow: var(--shadow); 
+            overflow: hidden; 
+            max-width: 600px; 
             margin: 0 auto; 
-            background: white; 
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+            height: 100vh; 
+            max-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .header { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
+            color: white; 
+            padding: 25px 20px; 
+            text-align: center; 
+            position: relative; 
             overflow: hidden; 
         }
-        h1 { 
-            text-align: center; 
-            padding: 30px 20px; 
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -50%;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+        }
+        .header h1 { 
+            font-size: 1.4rem; 
+            font-weight: 600; 
             margin: 0; 
-            background: #1a1a2e; 
-            color: white; 
-            font-size: 1.8em; 
+            position: relative; 
+            z-index: 1; 
         }
+        .header p { 
+            opacity: 0.9; 
+            margin-top: 4px; 
+            font-size: 0.85rem; 
+            position: relative; 
+            z-index: 1; 
+        }
+
+        .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+        
         .status { 
-            text-align: center; 
             padding: 20px; 
-            font-weight: bold; 
+            text-align: center; 
+            font-weight: 500; 
+            flex-shrink: 0; 
+            position: relative; 
         }
-        .loading { color: #667eea; }
-        .error { color: #e74c3c; }
-        .success { color: #27ae60; }
-        .wallet-grid { 
+        .status.loading { color: var(--primary); }
+        .status.success { color: var(--success); }
+        .status.error { color: #e74c3c; }
+
+        .progress { 
+            display: flex; align-items: center; gap: 12px; 
+            font-size: 0.9rem; 
+        }
+        .progress-icon { 
+            width: 20px; height: 20px; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+        .progress-bar { 
+            flex: 1; height: 4px; background: var(--border); 
+            border-radius: 2px; overflow: hidden; 
+            position: relative; 
+        }
+        .progress-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark)); 
+            border-radius: 2px; 
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: progressShine 1.5s infinite;
+        }
+        @keyframes progressShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .wallets-list { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 0 20px 20px; 
+            scrollbar-width: thin; 
+            scrollbar-color: var(--primary) var(--bg); 
+        }
+        .wallets-list::-webkit-scrollbar { width: 4px; }
+        .wallets-list::-webkit-scrollbar-track { background: var(--bg); }
+        .wallets-list::-webkit-scrollbar-thumb { 
+            background: var(--primary); 
+            border-radius: 2px; 
+        }
+
+        .wallet-item { 
+            background: var(--bg); 
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 12px; 
+            border: 1px solid var(--border); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
             display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 20px; 
-            padding: 30px; 
+            grid-template-columns: 1fr auto; 
+            gap: 16px; 
+            align-items: center; 
+            position: relative; 
+            overflow: hidden; 
         }
-        .wallet { 
-            background: #f8f9fa; 
-            border-radius: 15px; 
-            padding: 25px; 
-            transition: transform 0.2s, box-shadow 0.2s; 
-            border-left: 5px solid #667eea; 
+        .wallet-item::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: var(--primary);
+            transform: scaleY(0);
+            transition: transform 0.3s;
         }
-        .wallet:hover { 
-            transform: translateY(-5px); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        .wallet-item:hover { 
+            transform: translateY(-4px); 
+            box-shadow: var(--shadow-hover); 
+            border-color: var(--primary); 
+        }
+        .wallet-item:hover::before { transform: scaleY(1); }
+        .wallet-no { 
+            font-size: 0.85rem; 
+            color: var(--text-muted); 
+            font-weight: 500; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+        }
+        
+        .address-container { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 12px; 
         }
         .address { 
-            font-family: monospace; 
-            font-size: 0.9em; 
-            color: #2c3e50; 
+            font-family: 'SF Mono', Monaco, monospace; 
+            font-size: 0.8rem; 
+            color: var(--text); 
             word-break: break-all; 
-            margin-bottom: 15px; 
+            max-width: 220px; 
+            letter-spacing: -0.02em; 
         }
-        .balance { 
-            font-size: 1.5em; 
-            font-weight: bold; 
-            color: #27ae60; 
-            margin-bottom: 5px; 
+        .copy-btn { 
+            background: none; 
+            border: 2px solid transparent; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            padding: 8px; 
+            border-radius: 10px; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            opacity: 0.6; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
         }
-        .usd { 
-            font-size: 1.1em; 
-            color: #7f8c8d; 
-        }
-        .total { 
-            background: linear-gradient(135deg, #27ae60, #2ecc71); 
+        .copy-btn:hover { 
+            background: var(--primary); 
             color: white; 
-            text-align: center; 
-            padding: 30px; 
-            font-size: 2em; 
-            font-weight: bold; 
-            margin: 0 30px 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 30px rgba(39,174,96,0.3); 
+            opacity: 1; 
+            border-color: rgba(255,255,255,0.2);
+            transform: scale(1.05); 
         }
-        .refresh { 
+        .copy-success { 
+            background: var(--success) !important; 
+            color: white !important; 
+            border-color: rgba(255,255,255,0.3) !important;
+            animation: pulse 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .balance { 
+            font-size: 1.3rem; 
+            font-weight: 700; 
+            color: var(--success); 
+            text-align: right; 
+            justify-self: end; 
+            position: relative; 
+        }
+        .balance::after {
+            content: '';
+            position: absolute;
+            bottom: -4px; right: 0;
+            width: 0; height: 2px;
+            background: var(--success);
+            transition: width 0.3s;
+        }
+        .wallet-item:hover .balance::after { width: 100%; }
+
+        .total { 
+            background: linear-gradient(135deg, var(--success), var(--success-dark)); 
+            color: white; 
+            padding: 24px 20px; 
             text-align: center; 
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            flex-shrink: 0; 
+            box-shadow: 0 -8px 30px rgba(39,174,96,0.3); 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .total::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: totalShine 2s infinite;
+        }
+        @keyframes totalShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .controls { 
             padding: 20px; 
+            text-align: center; 
+            border-top: 1px solid var(--border); 
+            flex-shrink: 0; 
         }
-        button { 
-            background: #667eea; 
+        .refresh-btn { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark)); 
             color: white; 
             border: none; 
-            padding: 12px 30px; 
-            border-radius: 25px; 
+            padding: 14px 32px; 
+            border-radius: 50px; 
             cursor: pointer; 
-            font-size: 1em; 
-            transition: background 0.2s; 
+            font-size: 1rem; 
+            font-weight: 500; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            min-width: 140px; 
+            position: relative; 
+            overflow: hidden; 
         }
-        button:hover { background: #5a67d8; }
-        button:disabled { background: #bdc3c7; cursor: not-allowed; }
-        @media (max-width: 600px) { 
-            .wallet-grid { grid-template-columns: 1fr; padding: 20px; } 
-            h1 { font-size: 1.5em; } 
+        .refresh-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .refresh-btn:hover:not(:disabled)::before { left: 100%; }
+        .refresh-btn:hover:not(:disabled) { 
+            transform: translateY(-2px); 
+            box-shadow: var(--shadow-hover); 
+        }
+        .refresh-btn:disabled { 
+            background: var(--border); 
+            cursor: not-allowed; 
+            transform: none; 
+        }
+
+        @media (min-width: 480px) {
+            body { padding: 20px; }
+            .wallet-item { grid-template-columns: auto 1fr auto; }
+            .wallet-no { 
+                writing-mode: vertical-rl; 
+                text-orientation: mixed; 
+                transform: rotate(180deg); 
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Wallet Balances (ETH) - Live</h1>
-        <div id="status" class="status">Loading balances...</div>
-        <div id="wallets" class="wallet-grid" style="display:none;"></div>
-        <div id="total" class="total" style="display:none;">Total Net Worth: 0 ETH</div>
-        <div class="refresh">
-            <button id="refreshBtn" onclick="loadBalances()">🔄 Refresh</button>
+        <div class="header">
+            <h1>Wallet Balances</h1>
+            <p>Live ETH balances across 15 addresses</p>
+        </div>
+
+        <div class="content">
+            <div id="status" class="status">
+                <div class="progress">
+                    <div class="progress-icon">
+                        <ion-icon name="hourglass-outline"></ion-icon>
+                    </div>
+                    <div id="progressText">Ready</div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="wallets" class="wallets-list"></div>
+            
+            <div id="total" class="total" style="display: none;">
+                <ion-icon name="trending-up-outline" style="font-size: 1.2em; vertical-align: middle; margin-right: 8px;"></ion-icon>
+                Total Net Worth: 0 ETH
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="refreshBtn" class="refresh-btn">
+                <ion-icon name="refresh-outline" style="font-size: 1.1em; vertical-align: middle; margin-right: 8px;"></ion-icon>
+                Refresh Data
+            </button>
         </div>
     </div>
 
@@ -133,7 +370,8 @@
             '0x6b8fc091c5f4cb485318d7536127f9ad069bbaec'
         ];
 
-        const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';  // Public, no key needed
+        const RPC_URL = 'https://eth-mainnet.g.alchemy.com/v2/demo';
+        let currentResults = [];
 
         async function getBalance(address) {
             try {
@@ -148,14 +386,20 @@
                     })
                 });
                 const data = await response.json();
-                if (data.result) {
-                    return parseInt(data.result, 16) / 1e18;
-                }
-                return 0;
+                return data.result ? parseInt(data.result, 16) / 1e18 : 0;
             } catch (e) {
-                console.error(`Error for ${address}:`, e);
                 return 0;
             }
+        }
+
+        function updateProgress(index, statusText = '') {
+            const progress = ((index / ADDRESSES.length) * 100);
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = statusText || `Wallet ${index}/${ADDRESSES.length}`;
+        }
+
+        function updateStatusIcon(iconName) {
+            document.querySelector('.progress-icon ion-icon').setAttribute('name', iconName);
         }
 
         async function loadBalances() {
@@ -163,49 +407,95 @@
             const walletsDiv = document.getElementById('wallets');
             const totalDiv = document.getElementById('total');
             const btn = document.getElementById('refreshBtn');
-            
-            status.textContent = 'Fetching balances...';
-            status.className = 'status loading';
-            walletsDiv.style.display = 'none';
+
+            walletsDiv.innerHTML = '';
             totalDiv.style.display = 'none';
             btn.disabled = true;
-            btn.textContent = 'Loading...';
+            updateStatusIcon('hourglass-outline');
+            updateProgress(0, 'Starting...');
+
+            let totalEth = 0;
+            currentResults = [];
 
             try {
-                let totalEth = 0;
-                walletsDiv.innerHTML = '';
-
-                // Sequential fetch to avoid rate limits
-                for (const [index, addr] of ADDRESSES.entries()) {
-                    status.textContent = `Loading ${index + 1}/${ADDRESSES.length}...`;
+                for (let i = 0; i < ADDRESSES.length; i++) {
+                    const addr = ADDRESSES[i];
+                    updateProgress(i + 1);
+                    
                     const eth = await getBalance(addr);
+                    currentResults.push({ index: i + 1, address: addr, balance: eth });
                     totalEth += eth;
 
+                    // Animate in 1 by 1
                     const div = document.createElement('div');
-                    div.className = 'wallet';
+                    div.className = 'wallet-item';
+                    div.style.opacity = '0';
+                    div.style.transform = 'translateY(20px)';
                     div.innerHTML = `
-                        <div class="address">${addr}</div>
+                        <div class="wallet-no">
+                            <ion-icon name="wallet-outline" style="font-size: 1rem;"></ion-icon>
+                            #${i + 1}
+                        </div>
+                        <div class="address-container">
+                            <div class="address">${addr}</div>
+                            <button class="copy-btn" onclick="copyAddress('${addr}', this)" title="Copy address">
+                                <ion-icon name="copy-outline"></ion-icon>
+                            </button>
+                        </div>
                         <div class="balance">${eth.toFixed(6)} ETH</div>
                     `;
                     walletsDiv.appendChild(div);
+
+                    // Animate entrance
+                    requestAnimationFrame(() => {
+                        div.style.opacity = '1';
+                        div.style.transform = 'translateY(0)';
+                        div.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                    });
+
+                    await new Promise(r => setTimeout(r, 150));
                 }
 
-                walletsDiv.style.display = 'grid';
-                totalDiv.textContent = `Total Net Worth: ${totalEth.toFixed(4)} ETH`;
+                totalDiv.innerHTML = `
+                    <ion-icon name="trending-up-outline" style="font-size: 1.2em; vertical-align: middle; margin-right: 8px;"></ion-icon>
+                    Total Net Worth: ${totalEth.toFixed(4)} ETH
+                `;
                 totalDiv.style.display = 'block';
-                status.textContent = '✅ Updated!';
-                status.className = 'status success';
+                updateStatusIcon('checkmark-circle-outline');
+                updateProgress(ADDRESSES.length, 'All wallets loaded');
             } catch (error) {
-                status.textContent = `Error: ${error.message}`;
-                status.className = 'status error';
+                updateStatusIcon('close-circle-outline');
+                updateProgress(0, `Error: ${error.message}`);
             } finally {
                 btn.disabled = false;
-                btn.textContent = '🔄 Refresh';
+                btn.innerHTML = '<ion-icon name="refresh-outline" style="font-size: 1.1em; vertical-align: middle; margin-right: 8px;"></ion-icon>Refresh Data';
             }
         }
 
-        // Auto-load on page open
-        loadBalances();
+        function copyAddress(address, button) {
+            navigator.clipboard.writeText(address).then(() => {
+                const icon = button.querySelector('ion-icon');
+                const originalName = icon.getAttribute('name');
+                icon.setAttribute('name', 'checkmark-circle-outline');
+                button.classList.add('copy-success');
+                
+                setTimeout(() => {
+                    icon.setAttribute('name', originalName);
+                    button.classList.remove('copy-success');
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = address;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            });
+        }
+
+        // Auto load
+        document.addEventListener('DOMContentLoaded', loadBalances);
     </script>
 </body>
 </html>
